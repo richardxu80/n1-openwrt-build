@@ -10,7 +10,7 @@ ubus
 opkg
 fstools
 jshn
-libjson-script
+libjson-script20240329
 libubox20240329
 ubox
 procd
@@ -34,7 +34,7 @@ dropbear
 uhttpd
 uhttpd-mod-ubus
 cgi-io
-liblucihttp
+liblucihttp0
 liblucihttp-lua
 luci
 luci-base

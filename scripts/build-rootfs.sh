@@ -12,7 +12,7 @@ OUT="${OUT:-$HERE/out/rootfs}"
 WORK="${WORK:-$PWD/work-rootfs}"
 B="$OPENWRT_VER"
 BASE="https://downloads.openwrt.org/releases/${B}/targets/${OPENWRT_TARGET}"
-IB="openwrt-imagebuilder-${B}-armsr-armv8.Linux-x86_64.tar.xz"
+IB="openwrt-imagebuilder-${B}-armsr-armv8.Linux-x86_64.tar.zst"
 
 step() { echo; echo "==== $* ===="; }
 mkdir -p "$OUT" "$WORK"
@@ -30,8 +30,8 @@ GOT=$(sha256sum "$IB" | awk '{print $1}')
 echo "✅ ImageBuilder sha256 = $GOT"
 
 step "2/5 解包"
-[ -d "${IB%.tar.xz}" ] || tar -xf "$IB"
-IBD="$WORK/${IB%.tar.xz}"
+[ -d "${IB%.tar.zst}" ] || tar --zstd -xf "$IB"
+IBD="$WORK/${IB%.tar.zst}"
 cd "$IBD"
 
 step "3/5 放入本地 ipk（luci-app-amlogic，官方 feed 里没有）"
