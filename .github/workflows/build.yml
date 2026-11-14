@@ -33,7 +33,7 @@ jobs:
   # ---------------- 1. 自编内核 ----------------
   kernel:
     name: 编译内核 6.12.y
-    if: ${{ inputs.kernel_run_id == '' }}
+    if: ${{ !inputs.kernel_run_id }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -97,11 +97,11 @@ jobs:
             parted dosfstools btrfs-progs gzip xz-utils u-boot-tools util-linux
 
       - uses: actions/download-artifact@v4
-        if: ${{ inputs.kernel_run_id == '' }}
+        if: ${{ !inputs.kernel_run_id }}
         with: { name: kernel, path: in/kernel }
 
       - name: 复用指定 run 的内核产物
-        if: ${{ inputs.kernel_run_id != '' }}
+        if: ${{ !!inputs.kernel_run_id }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
