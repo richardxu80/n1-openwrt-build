@@ -7,6 +7,10 @@ on:
         description: "构建成功后发 Release"
         type: boolean
         default: true
+      kernel_run_id:
+        description: "复用已有 run 的 kernel artifact（填 run id 可跳过内核编译）"
+        type: string
+        default: ''
   push:
     branches: [main]
     paths:
@@ -29,6 +33,7 @@ jobs:
   # ---------------- 1. 自编内核 ----------------
   kernel:
     name: 编译内核 6.12.y
+    if: ${{ inputs.kernel_run_id == '' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -80,6 +85,7 @@ jobs:
     name: 打包 N1 镜像
     runs-on: ubuntu-24.04
     needs: [kernel, rootfs]
+    if: ${{ !cancelled() && needs.rootfs.result == 'success' && (needs.kernel.result == 'success' || needs.kernel.result == 'skipped') }}
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -91,7 +97,22 @@ jobs:
             parted dosfstools btrfs-progs gzip xz-utils u-boot-tools util-linux
 
       - uses: actions/download-artifact@v4
+        if: ${{ inputs.kernel_run_id == '' }}
         with: { name: kernel, path: in/kernel }
+
+      - name: 复用指定 run 的内核产物
+        if: ${{ inputs.kernel_run_id != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p in/kernel
+          ART=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ inputs.kernel_run_id }}/artifacts" \
+                --jq '.artifacts[] | select(.name=="kernel") | .id' | head -1)
+          [ -n "$ART" ] || { echo "❌ 指定 run 里没有 kernel artifact"; exit 1; }
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ART/zip" > /tmp/kernel.zip
+          unzip -q /tmp/kernel.zip -d in/kernel
+          ls -lh in/kernel
+
       - uses: actions/download-artifact@v4
         with: { name: rootfs, path: in/rootfs }
 

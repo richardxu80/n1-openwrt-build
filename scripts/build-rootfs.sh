@@ -23,7 +23,7 @@ if [ ! -f "$IB" ]; then
     curl -fsSL --retry 3 --connect-timeout 15 -O "$BASE/$IB"
 fi
 curl -fsSL --retry 3 --connect-timeout 15 -o sha256sums "$BASE/sha256sums"
-WANT=$(awk -v f="$IB" '$2==f {print $1}' sha256sums)
+WANT=$(awk -v f="$IB" '{n=$2; sub(/^\*/,"",n); if(n==f) print $1}' sha256sums)
 [ -n "$WANT" ] || { echo "❌ 官方 sha256sums 里找不到 $IB"; exit 1; }
 GOT=$(sha256sum "$IB" | awk '{print $1}')
 [ "$WANT" = "$GOT" ] || { echo "❌ ImageBuilder 校验失败 want=$WANT got=$GOT"; exit 1; }
