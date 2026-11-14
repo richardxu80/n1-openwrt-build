@@ -1,0 +1,22 @@
+config defaults
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option syn_flood '1'
+
+# WAN 全开：input/output/forward 全 ACCEPT，开启 masq 以支持客户端把网关指向本机
+config zone 'wan'
+	option name 'wan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	option masq '1'
+	option mtu_fix '1'
+	list network 'wan'
+
+# 保留空 lan 区，避免部分插件/脚本因缺 zone 报错
+config zone 'lan'
+	option name 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'

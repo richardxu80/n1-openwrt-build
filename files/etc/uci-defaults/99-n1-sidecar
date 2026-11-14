@@ -1,0 +1,20 @@
+#!/bin/sh
+# N1 单臂旁路由默认值（幂等，只跑一次）
+uci set system.@system[0].hostname='N1'
+uci set firewall.@zone[0].name='wan'
+uci set firewall.@zone[0].input='ACCEPT'
+uci set firewall.@zone[0].output='ACCEPT'
+uci set firewall.@zone[0].forward='ACCEPT'
+uci set firewall.@zone[0].masq='1'
+uci set dhcp.lan.ignore='1'
+uci set dhcp.wan.ignore='1'
+uci commit system
+uci commit firewall
+uci commit dhcp
+# 让 passwall2 安装脚本可直接执行
+[ -f /root/pw2-install.sh ] && chmod +x /root/pw2-install.sh
+[ -f /root/pw2-install.sh ] && ln -sf /root/pw2-install.sh /usr/bin/pw2-install
+/etc/init.d/network reload >/dev/null 2>&1
+/etc/init.d/firewall reload >/dev/null 2>&1
+logger -t n1-defaults "N1 defaults applied: wan=dhcp, firewall WAN open, pw2-install ready"
+exit 0

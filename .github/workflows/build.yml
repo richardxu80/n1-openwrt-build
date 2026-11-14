@@ -1,0 +1,123 @@
+name: Build N1 OpenWrt
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "构建成功后发 Release"
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'config/**'
+      - 'files/**'
+      - 'bootfs/**'
+      - 'rootfs-extra/**'
+      - 'kernel/config-6.12'
+      - 'pins.env'
+      - '.github/workflows/build.yml'
+
+permissions:
+  contents: write
+
+env:
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  # ---------------- 1. 自编内核 ----------------
+  kernel:
+    name: 编译内核 6.12.y
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装交叉编译工具链
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            build-essential git flex bison bc libssl-dev libelf-dev \
+            gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            device-tree-compiler kmod cpio zstd python3
+
+      - name: 编译
+        run: ./scripts/build-kernel.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel
+          path: out/kernel/
+          retention-days: 30
+
+  # ---------------- 2. 官方 ImageBuilder 建 rootfs ----------------
+  rootfs:
+    name: 构建 rootfs（官方 ImageBuilder）
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 ImageBuilder 依赖
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            build-essential libncurses-dev zlib1g-dev gawk git gettext \
+            libssl-dev xsltproc rsync wget unzip python3 file
+
+      - name: 构建
+        run: ./scripts/build-rootfs.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rootfs
+          path: out/rootfs/
+          retention-days: 30
+
+  # ---------------- 3. 自写打包器 ----------------
+  image:
+    name: 打包 N1 镜像
+    runs-on: ubuntu-24.04
+    needs: [kernel, rootfs]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装打包工具
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            parted dosfstools btrfs-progs gzip xz-utils u-boot-tools util-linux
+
+      - uses: actions/download-artifact@v4
+        with: { name: kernel, path: in/kernel }
+      - uses: actions/download-artifact@v4
+        with: { name: rootfs, path: in/rootfs }
+
+      - name: 打包
+        run: |
+          ROOTFS_TGZ=in/rootfs/rootfs.tar.gz \
+          KERNEL_DIR=in/kernel \
+          ./scripts/pack-n1.sh
+
+      - name: 产物自检
+        run: ./scripts/verify-image.sh "$(ls out/image/*.img.gz | head -1)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: n1-openwrt-image
+          path: out/image/
+          retention-days: 30
+
+      - name: 发 Release
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.create_release }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="n1-$(date +%Y%m%d-%H%M)"
+          IMG=$(ls out/image/*.img.gz | head -1)
+          gh release create "$TAG" "$IMG" "$IMG.sha256" \
+            --title "N1 OpenWrt $TAG" \
+            --notes "自建：官方 ImageBuilder rootfs + 自编内核 $(ls in/kernel/boot-*.tar.gz | sed 's|.*/boot-||;s|\.tar\.gz||')" \
+            --repo "$GITHUB_REPOSITORY"

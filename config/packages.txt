@@ -1,0 +1,86 @@
+# N1 旁路由 rootfs 包清单（一行一个，注释用 #）
+# 目标：能开机 + 能进 LuCI + 能装 eMMC + 能 https 拉包，其余一概不要
+
+# --- 系统底座（少了不开机）---
+base-files
+busybox
+netifd
+uci
+ubus
+opkg
+fstools
+jshn
+libjson-script
+libubox20240329
+ubox
+procd
+procd-seccomp
+procd-ujail
+logd
+mtd
+ubusd
+urandom-seed
+urngd
+
+# --- 网络（DHCP/DNS/防火墙/SSH）---
+# 注意：不要列任何 kmod-*。官方 feed 的 kmod 是按 6.6.144 编的，
+# 与本镜像自编内核版本不符；nft/conntrack/vfat 等模块由自编内核提供。
+dnsmasq
+firewall4
+nftables-json
+dropbear
+
+# --- 管理界面 ---
+uhttpd
+uhttpd-mod-ubus
+cgi-io
+liblucihttp
+liblucihttp-lua
+luci
+luci-base
+luci-compat
+luci-mod-admin-full
+luci-mod-network
+luci-mod-status
+luci-mod-system
+luci-lib-base
+luci-lib-ip
+luci-lib-ipkg
+luci-lib-jsonc
+luci-lib-nixio
+luci-theme-bootstrap
+luci-app-firewall
+luci-app-package-manager
+luci-i18n-base-zh-cn
+luci-i18n-firewall-zh-cn
+luci-i18n-package-manager-zh-cn
+
+# --- eMMC 安装所需工具 ---
+parted
+losetup
+e2fsprogs
+resize2fs
+tune2fs
+fdisk
+blkid
+lsblk
+block-mount
+mount-utils
+partx-utils
+mkf2fs
+
+# --- 拉包/解压 ---
+curl
+ca-bundle
+libcurl4
+libustream-mbedtls20201210
+uclient-fetch
+bash
+tar
+gzip
+unzip
+xz
+xz-utils
+jq
+zoneinfo-core
+zoneinfo-asia

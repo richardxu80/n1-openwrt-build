@@ -1,0 +1,13 @@
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	list ipaddr '127.0.0.1/8'
+
+config globals 'globals'
+	option ula_prefix 'auto'
+
+# 单网口旁路由：唯一网口 eth0 作为 WAN，地址由主路由 DHCP 分配
+config interface 'wan'
+	option device 'eth0'
+	option proto 'dhcp'
+	option hostname 'N1'
