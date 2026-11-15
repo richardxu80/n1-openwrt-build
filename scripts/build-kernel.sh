@@ -51,9 +51,12 @@ done
 # 不允许模块签名强制（否则我们编的模块在设备上加载不了）
 sed -i 's|^CONFIG_MODULE_SIG_FORCE=.*|# CONFIG_MODULE_SIG_FORCE is not set|' .config
 sed -i 's|^CONFIG_INITRAMFS_SOURCE=.*|CONFIG_INITRAMFS_SOURCE=""|' .config
-# 关掉 setlocalversion 的自动后缀，否则树是 dirty 时会变成 6.12.x-n1+，产物名不稳定
+# 内核名只用 .config 里的 LOCALVERSION。光关 LOCALVERSION_AUTO 不够：
+# scripts/setlocalversion 对「树是 dirty」仍会追加 "+"（我们改过 .config 必然 dirty），
+# 唯一可靠的开关是放一个空的 .scmversion，内核就完全跳过 git 探测。
 sed -i 's|^CONFIG_LOCALVERSION_AUTO=.*|# CONFIG_LOCALVERSION_AUTO is not set|' .config
 grep -q "^# CONFIG_LOCALVERSION_AUTO is not set" .config || echo '# CONFIG_LOCALVERSION_AUTO is not set' >> .config
+: > .scmversion
 
 step "3/6 olddefconfig 收敛配置"
 make ARCH=$ARCH CROSS_COMPILE=$XC olddefconfig >/dev/null
