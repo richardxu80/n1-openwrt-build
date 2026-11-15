@@ -83,7 +83,7 @@ step "4/8 铺 rootfs（btrfs + /etc 子卷）"
 mkdir -p "$WORK/rootfs" "$WORK/bootfs"
 mount -t btrfs "${LOOP}p2" "$WORK/rootfs"
 btrfs subvolume create "$WORK/rootfs/etc" >/dev/null
-tar -mxzf "$ROOTFS_TGZ" -C "$WORK/rootfs"
+tar -mxzf --no-same-owner "$ROOTFS_TGZ" -C "$WORK/rootfs"
 rm -rf "$WORK/rootfs/lib/modules"/* 2>/dev/null || true
 mkdir -p "$WORK/rootfs/.reserved" "$WORK/rootfs/boot" "$WORK/rootfs/run"
 
@@ -97,16 +97,16 @@ sed -i "s|option amlogic_kernel_branch.*|option amlogic_kernel_branch '6.12'|g" 
 
 # ---------- 5. 装内核模块 ----------
 step "5/8 安装内核模块 /lib/modules/$KREL"
-tar -mxzf "$MOD_TGZ" -C "$WORK/rootfs"
+tar -mxzf --no-same-owner "$MOD_TGZ" -C "$WORK/rootfs"
 [ -d "$WORK/rootfs/lib/modules/$KREL" ] || { echo "❌ 模块目录不存在"; exit 1; }
 echo "  模块数: $(find "$WORK/rootfs/lib/modules/$KREL" -name '*.ko' | wc -l)"
 
 # ---------- 6. 铺 bootfs ----------
 step "6/8 铺 bootfs（FAT32）"
 mount -t vfat "${LOOP}p1" "$WORK/bootfs"
-tar -mxzf "$BOOT_TGZ" -C "$WORK/bootfs"          # vmlinuz- / uInitrd- / config- / System.map-
+tar -mxzf --no-same-owner "$BOOT_TGZ" -C "$WORK/bootfs"          # vmlinuz- / uInitrd- / config- / System.map-
 mkdir -p "$WORK/bootfs/dtb/amlogic"
-tar -mxzf "$DTB_TGZ" -C "$WORK/bootfs/dtb/amlogic"
+tar -mxzf --no-same-owner "$DTB_TGZ" -C "$WORK/bootfs/dtb/amlogic"
 cp -f "$WORK/bootfs/vmlinuz-$KREL" "$WORK/bootfs/zImage"
 cp -f "$WORK/bootfs/uInitrd-$KREL" "$WORK/bootfs/uInitrd"
 # mainline u-boot：2015 引导靠 u-boot.ext 链加载，emmc 安装脚本认 u-boot-n1.bin

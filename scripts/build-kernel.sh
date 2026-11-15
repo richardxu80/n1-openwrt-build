@@ -83,9 +83,10 @@ cp -f System.map                 "$KDIR/boot/System.map-$KREL"
 # dtb: 全部 amlogic
 cp -f arch/$ARCH/boot/dts/amlogic/*.dtb "$KDIR/dtb/"
 
-tar -czf "$OUT/boot-$KREL.tar.gz"        -C "$KDIR/boot" .
-tar -czf "$OUT/dtb-amlogic-$KREL.tar.gz" -C "$KDIR/dtb"  .
-tar -czf "$OUT/modules-$KREL.tar.gz"     -C "$WORK/staging" lib
+TAROPT="--owner=0 --group=0 --numeric-owner"
+tar $TAROPT -czf "$OUT/boot-$KREL.tar.gz"        -C "$KDIR/boot" .
+tar $TAROPT -czf "$OUT/dtb-amlogic-$KREL.tar.gz" -C "$KDIR/dtb"  .
+tar $TAROPT -czf "$OUT/modules-$KREL.tar.gz"     -C "$WORK/staging" lib
 
 cd "$OUT"
 sha256sum ./*.tar.gz > sha256sums
