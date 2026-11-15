@@ -116,14 +116,14 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: rootfs, path: in/rootfs }
 
-      - name: 打包
+      - name: 打包（需要 root：losetup/mount/mkfs）
         run: |
-          ROOTFS_TGZ=in/rootfs/rootfs.tar.gz \
-          KERNEL_DIR=in/kernel \
-          ./scripts/pack-n1.sh
+          sudo env ROOTFS_TGZ=in/rootfs/rootfs.tar.gz \
+                   KERNEL_DIR=in/kernel \
+                   ./scripts/pack-n1.sh
 
-      - name: 产物自检
-        run: ./scripts/verify-image.sh "$(ls out/image/*.img.gz | head -1)"
+      - name: 产物自检（需要 root：mount）
+        run: sudo ./scripts/verify-image.sh "$(ls out/image/*.img.gz | head -1)"
 
       - uses: actions/upload-artifact@v4
         with:
