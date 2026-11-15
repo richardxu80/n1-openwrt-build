@@ -47,8 +47,16 @@ ls -lh packages/ || true
 
 step "4/5 用我们的包清单 + files/ 覆盖层构建镜像"
 PKGS=$(grep -vE '^\s*(#|$)' "$HERE/config/packages.txt" | tr '\n' ' ')
-# 只把实际下载成功的本地 ipk 拼进去
-for f in packages/*.ipk; do [ -s "$f" ] && PKGS="$PKGS $(basename "$f")"; done
+# 只把真正的 ipk 拼进去（校验 ar 魔数，防 404 页面混入）；必须带 packages/ 前缀，
+# 因为 ImageBuilder 里 opkg 按 CWD(TOPDIR) 解析本地文件名
+for f in packages/*.ipk; do
+    _magic=$(head -c 2 "$f" 2>/dev/null | od -An -tx1 | tr -d ' \n')
+    if [ -s "$f" ] && { [ "$_magic" = '1f8b' ] || [ "$(head -c 7 "$f")" = '!<arch>' ]; }; then
+        PKGS="$PKGS $f"
+    else
+        echo "⚠ 跳过非法 ipk: $f"; rm -f "$f"
+    fi
+done
 echo "包清单: $PKGS"
 
 rm -rf "$IBD/files"
